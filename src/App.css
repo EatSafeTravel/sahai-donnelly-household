@@ -57,7 +57,7 @@ label { font-size: 12px; font-weight: 500; color: var(--mid); display: block; ma
 .meal-day-label { font-size: 10px; font-weight: 600; color: var(--mid); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .meal-day-name { font-size: 12px; font-weight: 500; color: var(--ink); line-height: 1.35; }
 .meal-day-meta { font-size: 10px; color: var(--mid); margin-top: 4px; }
-.meal-day-edit { position: absolute; inset: 0; background: var(--green-light); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.meal-day-edit { background: transparent; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .meal-day-edit input { font-size: 11px; padding: 4px 7px; }
 .meal-day-edit .save-btn { font-size: 11px; padding: 3px 8px; background: var(--green); color: white; border: none; border-radius: 5px; cursor: pointer; }
 
@@ -94,6 +94,11 @@ label { font-size: 12px; font-weight: 500; color: var(--mid); display: block; ma
 .reward-card:hover { border-color: var(--green-mid); }
 .reward-pts { font-family: var(--serif); font-size: 22px; color: var(--amber); }
 .reward-label { font-size: 11px; color: var(--mid); margin-top: 3px; }
+
+/* ── REWARD REDEMPTION ── */
+.redeem-confirm { margin-top: 14px; padding: 12px 14px; background: var(--amber-light); border: 1px solid #e8c97a; border-radius: 8px; }
+.redeem-confirm-text { font-size: 12px; margin-bottom: 8px; color: var(--ink); }
+.redeem-confirm-row { display: flex; gap: 8px; align-items: center; }
 
 /* ── AGENT ── */
 .agent-chat { display: flex; flex-direction: column; gap: 12px; max-height: 420px; overflow-y: auto; padding-right: 4px; margin-bottom: 16px; }
@@ -150,6 +155,58 @@ label { font-size: 12px; font-weight: 500; color: var(--mid); display: block; ma
 .setup-banner-btn { background: white; color: var(--green); border: none; font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background .15s; }
 .setup-banner-btn:hover:not(:disabled) { background: var(--green-light); }
 .setup-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── DINNER PLAN FORM ── */
+.dinner-plan-form { background: var(--faint); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+.dinner-plan-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+.dinner-plan-days { display: flex; gap: 6px; flex-wrap: wrap; }
+.dinner-day-btn { padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--rule); background: var(--white); font-size: 12px; font-family: var(--font); cursor: pointer; color: var(--mid); transition: all .15s; }
+.dinner-day-btn.active { background: var(--green); border-color: var(--green); color: white; font-weight: 500; }
+.dinner-day-btn:hover:not(.active) { border-color: var(--green-mid); color: var(--ink); }
+.dinner-plan-footer { display: flex; align-items: center; gap: 8px; }
+.dinner-plan-footer .text-mid { flex: 1; }
+.dinner-day-assignments { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.dinner-day-row { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.dinner-day-name { font-size: 12px; font-weight: 600; min-width: 34px; padding-top: 4px; }
+.dinner-assigned-meal { display: inline-flex; align-items: center; gap: 5px; background: var(--amber-light); color: var(--amber); padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+.dinner-assigned-meal button { background: none; border: none; cursor: pointer; color: var(--amber); font-size: 14px; line-height: 1; padding: 0; }
+.dinner-pick-btn { font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px dashed var(--green-mid); background: none; color: var(--green); cursor: pointer; transition: background .1s; }
+.dinner-pick-btn:hover { background: var(--green-light); }
+.dinner-fav-picker { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; padding: 4px 0 2px; }
+.dinner-fav-chip { font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--rule); background: var(--white); color: var(--ink); cursor: pointer; transition: all .1s; }
+.dinner-fav-chip:hover { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
+
+/* ── MEAL OPTIONS & LIBRARY ── */
+.meal-opts-section { margin: 4px 0 2px; }
+.meal-opts-label { font-size: 9px; font-weight: 600; color: var(--mid); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+.meal-opts-row { display: flex; flex-wrap: wrap; gap: 3px; }
+.meal-opt-chip { font-size: 10px; padding: 3px 7px; border-radius: 10px; border: 1px solid var(--green-mid); background: var(--green-light); color: var(--green); cursor: pointer; text-align: left; transition: all .1s; line-height: 1.3; }
+.meal-opt-chip:hover, .meal-opt-chip.selected { background: var(--green); color: white; border-color: var(--green); }
+.meal-opt-chip.library { border-color: var(--amber); background: var(--amber-light); color: var(--amber); }
+.meal-opt-chip.library:hover, .meal-opt-chip.library.selected { background: var(--amber); color: white; }
+.meal-alts-badge { font-size: 9px; color: var(--green); margin-top: 3px; font-weight: 500; }
+.meal-day.skipped { background: var(--rule); opacity: 0.65; }
+.meal-day.skipped .meal-day-label { color: var(--mid); }
+.meal-skip-btn { font-size: 9px; color: var(--mid); background: none; border: none; cursor: pointer; padding: 0; margin-top: auto; padding-top: 4px; text-decoration: underline; display: block; text-align: left; }
+.meal-skip-btn:hover { color: var(--ink); }
+.meal-library-grid { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; }
+.library-meal-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 16px; background: var(--faint); border: 1px solid var(--rule); font-size: 12px; }
+.library-meal-time { color: var(--mid); font-size: 10px; }
+.library-meal-chip button { background: none; border: none; cursor: pointer; color: var(--mid); font-size: 14px; line-height: 1; padding: 0; }
+.library-meal-chip button:hover { color: var(--red); }
+
+/* ── MARKDOWN IN CHAT ── */
+.md { font-size: 13px; line-height: 1.6; }
+.md p { margin: 0 0 8px; }
+.md p:last-child { margin-bottom: 0; }
+.md h1, .md h2, .md h3 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+.md h1:first-child, .md h2:first-child, .md h3:first-child { margin-top: 0; }
+.md ul, .md ol { padding-left: 18px; margin: 4px 0 8px; }
+.md li { margin-bottom: 2px; }
+.md hr { border: none; border-top: 1px solid var(--rule); margin: 8px 0; }
+.md strong { font-weight: 600; }
+.md del { text-decoration: line-through; color: var(--mid); }
+.md code { background: var(--faint); border-radius: 4px; padding: 1px 5px; font-size: 12px; }
 
 /* ── STEP MESSAGES ── */
 .msg-step { background: var(--faint); border: 1px dashed var(--rule); color: var(--mid); font-size: 12px; font-style: italic; align-self: flex-start; border-radius: 4px 12px 12px 12px; }

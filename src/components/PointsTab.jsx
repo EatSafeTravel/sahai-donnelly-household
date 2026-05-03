@@ -13,6 +13,8 @@ const REASONS = [
 
 export default function PointsTab({ onRewardRedeem }) {
   const { state, save } = useHouseholdState();
+  const [redeemReward, setRedeemReward] = useState(null); // reward being redeemed
+  const [redeemKid, setRedeemKid] = useState('');
   const [selectedKid, setSelectedKid] = useState(state.kids[0] || '');
   const [selectedReasonIdx, setSelectedReasonIdx] = useState(0);
   const [customPts, setCustomPts] = useState(1);
@@ -116,12 +118,53 @@ export default function PointsTab({ onRewardRedeem }) {
         <div className="card-body">
           <div className="rewards-grid">
             {state.rewards.map((r, i) => (
-              <div key={i} className="reward-card" onClick={() => onRewardRedeem(r)}>
+              <div key={i} className="reward-card" onClick={() => {
+                setRedeemReward(r);
+                setRedeemKid(state.kids[0] || '');
+              }}>
                 <div className="reward-pts">{r.pts}</div>
                 <div className="reward-label">{r.label}</div>
               </div>
             ))}
           </div>
+
+          {redeemReward && (
+            <div className="redeem-confirm">
+              <div className="redeem-confirm-text">
+                Redeem <strong>{redeemReward.label}</strong> ({redeemReward.pts} pts) for:
+              </div>
+              <div className="redeem-confirm-row">
+                <select
+                  value={redeemKid}
+                  onChange={e => setRedeemKid(e.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  {state.kids.map(k => (
+                    <option key={k} value={k}>
+                      {k} ({state.scores[k] || 0} pts)
+                    </option>
+                  ))}
+                </select>
+                <button className="btn btn-sm btn-danger" onClick={() => setRedeemReward(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    const cost = redeemReward.pts;
+                    save({
+                      scores: { ...state.scores, [redeemKid]: (state.scores[redeemKid] || 0) - cost },
+                      weekScores: { ...state.weekScores, [redeemKid]: (state.weekScores[redeemKid] || 0) - cost },
+                      log: [...state.log, { kid: redeemKid, reason: `Redeemed: ${redeemReward.label}`, pts: -cost, ts: Date.now() }],
+                    });
+                    setRedeemReward(null);
+                  }}
+                >
+                  Confirm redeem
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
