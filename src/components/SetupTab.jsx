@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useHouseholdState } from '../context/StateContext';
+import { PLANNING_STYLES } from './AgentTab';
 
 // ── Profile card for one family member ────────────────────────────────────────
 function ProfileCard({ name, profile, onUpdate, onRemove, isKid }) {
@@ -296,6 +297,47 @@ export default function SetupTab() {
               </select>
             </div>
           </div>
+          <hr className="divider" />
+          <label>Meal planning style</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {PLANNING_STYLES.map(s => (
+              <label key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontWeight: 'normal', color: 'var(--ink)', marginBottom: 0 }}>
+                <input
+                  type="radio"
+                  name="planningStyle"
+                  value={s.id}
+                  checked={(state.prefs.planningStyle || 'family-veggie') === s.id}
+                  onChange={() => updatePref('planningStyle', s.id)}
+                  style={{ marginTop: 3, width: 'auto' }}
+                />
+                <span>
+                  <span style={{ fontWeight: 500, fontSize: 13 }}>{s.label}</span>
+                  <span style={{ display: 'block', fontSize: 11, color: 'var(--mid)', marginTop: 1 }}>{s.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {(state.prefs.planningStyle || 'family-veggie') === 'custom' && (
+            <textarea
+              rows="4"
+              placeholder="Describe your meal planning rules — format requirements, protein preferences, number of options per day…"
+              value={state.prefs.planningCustom || ''}
+              onChange={e => updatePref('planningCustom', e.target.value)}
+              style={{ resize: 'vertical', marginBottom: 12 }}
+            />
+          )}
+          <hr className="divider" />
+          <label>Recipe inspiration</label>
+          <textarea
+            rows="2"
+            placeholder="e.g. NYT Cooking — Melissa Clark, Sam Sifton; Ottolenghi; Nigella Lawson…"
+            value={state.prefs.recipeInspiration || ''}
+            onChange={e => updatePref('recipeInspiration', e.target.value)}
+            style={{ resize: 'vertical', marginBottom: 4 }}
+          />
+          <span style={{ fontSize: 11, color: 'var(--mid)' }}>
+            Claude draws on these sources when generating meal ideas. It can't browse live sites, but uses what it knows from training data.
+          </span>
           <hr className="divider" />
           <label>Foods to avoid / rotate out</label>
           <textarea

@@ -67,9 +67,14 @@ export default function MealsTab({ onQuickSend }) {
     setNewLibName(''); setNewLibTime('');
   }
 
+  const DEFAULT_HOME = ['Mon', 'Tue', 'Wed', 'Thu'];
+
   function clearMeals() {
     if (confirm('Clear all meals?')) {
-      save({ meals: state.meals.map(m => ({ ...m, name: '', time: '' })), mealOptions: {} });
+      save({
+        meals: state.meals.map(m => ({ ...m, name: '', time: '', skip: !DEFAULT_HOME.includes(m.day) })),
+        mealOptions: {},
+      });
     }
   }
 
@@ -95,6 +100,23 @@ export default function MealsTab({ onQuickSend }) {
           <button className="btn btn-sm ml-auto" onClick={clearMeals}>Clear all</button>
         </div>
         <div className="card-body">
+          {/* Day selector */}
+          <div className="meal-day-selector">
+            <span className="meal-days-label">Days we need dinner:</span>
+            <div className="meal-days-btns">
+              {state.meals.map((m, i) => (
+                <button
+                  key={m.day}
+                  className={`dinner-day-btn${!m.skip ? ' active' : ''}`}
+                  onClick={() => toggleSkip(i)}
+                  type="button"
+                >
+                  {m.day}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="meal-grid">
             {state.meals.map((m, i) => {
               const opts = mealOptions[m.day] || [];

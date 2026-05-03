@@ -1,15 +1,26 @@
 import { useState } from 'react';
 import { useHouseholdState } from '../context/StateContext';
 
-const REASONS = [
-  { label: 'Listened first time (+1)', pts: 1 },
-  { label: 'Joined activity (+1)', pts: 1 },
-  { label: 'No complaining (+1)', pts: 1 },
-  { label: 'Helped without asking (+1)', pts: 1 },
-  { label: 'Completed chores (+1)', pts: 1 },
-  { label: 'Refused / complained (-1)', pts: -1 },
-  { label: 'Did not listen (-1)', pts: -1 },
+const DEFAULT_REASONS = [
+  { label: 'Listened first time', pts: 1 },
+  { label: 'Joined activity', pts: 1 },
+  { label: 'No complaining', pts: 1 },
+  { label: 'Helped without asking', pts: 1 },
+  { label: 'Completed chores', pts: 1 },
+  { label: 'Refused / complained', pts: -1 },
+  { label: 'Did not listen', pts: -1 },
 ];
+
+function parsePtsRules(text) {
+  if (!text?.trim()) return [];
+  return text.split('\n')
+    .map(l => l.trim()).filter(Boolean)
+    .map(line => {
+      const m = line.match(/^(.+?)\s*([+-]\d+)\s*$/);
+      return m ? { label: m[1].trim(), pts: parseInt(m[2]) } : null;
+    })
+    .filter(Boolean);
+}
 
 export default function PointsTab({ onRewardRedeem }) {
   const { state, save } = useHouseholdState();
@@ -26,16 +37,19 @@ export default function PointsTab({ onRewardRedeem }) {
     });
   }
 
+  const reasons = parsePtsRules(state.prefs?.ptsRules).length
+    ? parsePtsRules(state.prefs.ptsRules)
+    : DEFAULT_REASONS;
+
   function logEntry() {
     const kid = selectedKid || state.kids[0];
     if (!kid) return;
-    const reason = REASONS[selectedReasonIdx];
-    const pts = reason ? reason.pts : customPts;
-    const label = reason ? reason.label.replace(/[+-]\d+/, '').trim() : 'Custom';
+    const reason = reasons[selectedReasonIdx] || reasons[0];
+    const pts = reason.pts;
     save({
       scores: { ...state.scores, [kid]: (state.scores[kid] || 0) + pts },
       weekScores: { ...state.weekScores, [kid]: (state.weekScores[kid] || 0) + pts },
-      log: [...state.log, { kid, reason: label, pts, ts: Date.now() }],
+      log: [...state.log, { kid, reason: reason.label, pts, ts: Date.now() }],
     });
   }
 
@@ -86,7 +100,9 @@ export default function PointsTab({ onRewardRedeem }) {
               onChange={e => setSelectedReasonIdx(Number(e.target.value))}
               style={{ flex: 2 }}
             >
-              {REASONS.map((r, i) => <option key={i} value={i}>{r.label}</option>)}
+              {reasons.map((r, i) => (
+                <option key={i} value={i}>{r.label} ({r.pts > 0 ? '+' : ''}{r.pts})</option>
+              ))}
             </select>
             <input
               type="number"

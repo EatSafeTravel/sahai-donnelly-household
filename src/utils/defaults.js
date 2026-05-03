@@ -42,7 +42,11 @@ export const DEFAULT_STATE = {
     weekend: 'Happy to cook more',
     avoid: '',
     ptsRules: '',
+    planningStyle: 'family-veggie',
+    planningCustom: '',
+    recipeInspiration: 'NYT Cooking — draw on recipes by Melissa Clark, Sam Sifton, and Ali Slagle',
   },
+  mealHistory: [], // [{ week: 'YYYY-WW', meals: ['Meal 1', ...] }] — rolling 4-week archive
   mealNotes: '',
   lastMealDay: 'Monday',
   chatHistory: [],

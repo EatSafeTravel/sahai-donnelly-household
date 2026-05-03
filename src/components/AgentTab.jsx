@@ -9,6 +9,51 @@ const client = new Anthropic({
   dangerouslyAllowBrowser: true,
 });
 
+export const PLANNING_STYLES = [
+  {
+    id: 'family-veggie',
+    label: 'Family meal + easy veggie swap',
+    description: '2 options per day, both work for the whole family with meat. Protein sits alongside so Parul can have the dish vegetarian.',
+    format: `MEAL PLANNING FORMAT — always use this exact format:
+Mon: Option 1 (time) / Option 2 (time)
+Give exactly 2 options per day separated by " / ".
+Both options must work for Ronan, Kian and Mira as a meat meal. Choose dishes where the protein sits alongside (stir fries, curries, tacos, grain bowls, traybakes) so Parul can easily have the same dish without meat or with a vegetarian protein. Avoid meals where meat is inseparable (meatballs in sauce, meat pies, burgers).`,
+  },
+  {
+    id: 'meat-fish',
+    label: 'Meat option + fish variant',
+    description: '2 options per day — the same dish made with meat, then again with fish for Parul.',
+    format: `MEAL PLANNING FORMAT — always use this exact format:
+Mon: Meat version (time) / Fish version (time)
+Give exactly 2 options per day separated by " / ".
+Option 1: the family meal with a meat protein (Ronan, Kian, Mira). Option 2: the SAME dish but with fish instead of meat for Parul — same base, same sides, different protein only.`,
+  },
+  {
+    id: 'variety',
+    label: '3 completely different options',
+    description: 'Claude suggests 3 unrelated meal options per day for maximum variety.',
+    format: `MEAL PLANNING FORMAT — always use this exact format:
+Mon: Option 1 (time) / Option 2 (time) / Option 3 (time)
+Give exactly 3 completely different options per day separated by " / ". Maximise variety across cuisines and cooking styles.`,
+  },
+  {
+    id: 'custom',
+    label: 'Custom instructions',
+    description: 'Write your own meal planning rules.',
+    format: null, // filled from prefs.planningCustom
+  },
+];
+
+function buildPlanningFormat(styleId, customText) {
+  const style = PLANNING_STYLES.find(s => s.id === styleId) || PLANNING_STYLES[0];
+  if (style.id === 'custom') {
+    return customText?.trim()
+      ? `MEAL PLANNING FORMAT:\n${customText.trim()}`
+      : PLANNING_STYLES[0].format;
+  }
+  return style.format;
+}
+
 function buildSystemPrompt(state) {
   const mealOptions = state.mealOptions || {};
   const mealsStr = state.meals.map(m => {
@@ -22,6 +67,11 @@ function buildSystemPrompt(state) {
   const libraryStr = library.length
     ? library.map(m => `  - ${m.name}${m.time ? ` (${m.time})` : ''}`).join('\n')
     : '  (none saved yet)';
+
+  const history = state.mealHistory || [];
+  const historyStr = history.length
+    ? history.map(w => `  ${w.week}: ${w.meals.join(', ')}`).join('\n')
+    : '  (no history yet — variety will build up week by week)';
 
   const shopStr = Object.entries(state.shop)
     .map(([cat, items]) => `${cat}: ${items.map(i => i.name + (i.done ? ' (checked)' : '')).join(', ') || 'empty'}`)
@@ -74,10 +124,14 @@ MEAL PREFERENCES:
 - Weeknight time budget: ${state.prefs.time}
 - Weekend cooking: ${state.prefs.weekend}
 - Foods to avoid/rotate: ${state.prefs.avoid || 'none'}
+- Recipe inspiration: ${state.prefs.recipeInspiration || 'varied sources'}
 - Custom point rules: ${state.prefs.ptsRules || 'none'}
 
 MEAL LIBRARY (family favourites to draw from when planning):
 ${libraryStr}
+
+RECENT MEAL HISTORY (avoid repeating these — aim for variety week to week):
+${historyStr}
 
 CURRENT MEAL PLAN (days marked NOT HOME should be skipped; alternatives shown are already generated but not yet chosen):
 ${mealsStr}
@@ -91,13 +145,7 @@ ${ptsStr}
 RECENT LOG:
 ${state.log.slice(-5).map(l => `${l.kid}: ${l.reason} (${l.pts > 0 ? '+' : ''}${l.pts})`).join('\n') || 'No recent entries'}
 
-MEAL PLANNING FORMAT — always use this exact format when planning meals:
-Mon: Meat version (time) / Fish version (time) / Different meal entirely (time)
-Give 3 options per day separated by " / ":
-- Option 1: the main family meal with a meat protein (for Kian and Mira)
-- Option 2: the SAME dish as option 1 but swapping the meat for a fish protein (for Parul) — same base, same sides, same cooking method, different protein only
-- Option 3: a completely different meal as an alternative for the whole family
-This lets the family cook one shared meal base with two proteins side by side.
+${buildPlanningFormat(state.prefs?.planningStyle, state.prefs?.planningCustom)}
 
 SHOPPING LIST FORMAT — organise by: Produce, Meat & fish, Pantry, Dairy, Frozen, Other
 Be warm, practical, and family-friendly. Keep responses concise but helpful.`;
@@ -263,7 +311,7 @@ export default function AgentTab({ onQuickSend, pendingMsg, onPendingMsgConsumed
     try {
       const resp = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 4096,
         system: buildSystemPrompt(currentState),
         messages: history,
       });
@@ -300,6 +348,21 @@ export default function AgentTab({ onQuickSend, pendingMsg, onPendingMsgConsumed
         ws
       );
       addMsg(ptsSummary, 'ai');
+
+      // Archive this week's meals into rolling 4-week history
+      const currentMeals = ws.meals.filter(m => m.name && !m.skip).map(m => m.name);
+      if (currentMeals.length > 0) {
+        const now = new Date();
+        const weekNum = Math.ceil((((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 1) / 7);
+        const weekLabel = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        const mealHistory = [
+          { week: weekLabel, meals: currentMeals },
+          ...(ws.mealHistory || []).filter(h => h.week !== weekLabel),
+        ].slice(0, 4); // keep last 4 weeks
+        ws = { ...ws, mealHistory };
+        save({ mealHistory });
+      }
+
       const weekScores = {};
       ws.kids.forEach(k => { weekScores[k] = 0; });
       ws = { ...ws, weekScores };
@@ -307,21 +370,36 @@ export default function AgentTab({ onQuickSend, pendingMsg, onPendingMsgConsumed
 
       // ── Step 2: Plan meals ───────────────────────────────────────────
       addMsg("Step 2 / 5  ·  Planning this week's dinners…", 'step');
-      const mealReply = await callClaude(
-        `Plan 7 dinners for this week. Strictly respect all allergies. Avoid dislikes where possible. Use the family's favourite cuisines and time budget. Every meal must include a protein — meat for the children, fish options for Parul. For each day give 3 options: Mon: Option 1 (time) / Option 2 (time) / Option 3 (time). Include at least 2 quick weeknight meals under 30 minutes.`,
-        ws,
-        1400
-      );
-      addMsg(mealReply, 'ai');
-      const parsedMeals = parseMealsFromReply(mealReply, ws);
-      const parsedOptions = parseMealOptionsFromReply(mealReply);
-      if (parsedMeals) ws = { ...ws, meals: parsedMeals };
-      if (parsedOptions) ws = { ...ws, mealOptions: parsedOptions };
-      if (parsedMeals || parsedOptions) save({ meals: ws.meals, mealOptions: ws.mealOptions });
+      const homeDays = ws.meals.filter(m => !m.skip);
+      const daysNeedingMeals = homeDays.filter(m => !m.name);
+      const daysAlreadySet = homeDays.filter(m => m.name);
+
+      if (daysNeedingMeals.length === 0) {
+        addMsg(
+          `All ${homeDays.length} dinner day${homeDays.length !== 1 ? 's' : ''} already have meals set — skipping meal planning. Clear meals on the Meals tab if you'd like new suggestions.`,
+          'ai'
+        );
+      } else {
+        const daysStr = daysNeedingMeals.map(m => m.day).join(', ');
+        const alreadyNote = daysAlreadySet.length > 0
+          ? ` Already chosen for other days: ${daysAlreadySet.map(m => `${m.day}: ${m.name}`).join(', ')}. Do NOT output those days.`
+          : '';
+        const mealReply = await callClaude(
+          `Plan dinners for these days only: ${daysStr}.${alreadyNote} For each day give 2 options: Day: Option 1 (time) / Option 2 (time). Choose meals where the protein sits alongside the dish so Parul can easily have it vegetarian. Include variety and at least one quick meal under 30 minutes.`,
+          ws,
+          1400
+        );
+        addMsg(mealReply, 'ai');
+        const parsedMeals = parseMealsFromReply(mealReply, ws);
+        const parsedOptions = parseMealOptionsFromReply(mealReply);
+        if (parsedMeals) ws = { ...ws, meals: parsedMeals };
+        if (parsedOptions) ws = { ...ws, mealOptions: parsedOptions };
+        if (parsedMeals || parsedOptions) save({ meals: ws.meals, mealOptions: ws.mealOptions });
+      }
 
       // ── Step 3: Shopping list ────────────────────────────────────────
       addMsg('Step 3 / 5  ·  Building shopping list…', 'step');
-      const mealsForPrompt = ws.meals.map(m => `${m.day}: ${m.name}`).join(', ');
+      const mealsForPrompt = ws.meals.filter(m => !m.skip && m.name).map(m => `${m.day}: ${m.name}`).join(', ');
       const shopReply = await callClaude(
         `Generate a complete shopping list for this week's meal plan: ${mealsForPrompt}. Organise by category: Produce, Meat & fish, Pantry, Dairy, Frozen, Other. Format each item as: - Item name - quantity`,
         ws,
@@ -337,7 +415,7 @@ export default function AgentTab({ onQuickSend, pendingMsg, onPendingMsgConsumed
       const recipeReply = await callClaude(
         `Generate a concise recipe card for each of these dinners: ${plannedMeals.map(m => m.name).join(', ')}. For each recipe include: serves 4, ingredients with quantities, and clear numbered steps. Keep it practical and brief. Remember Mira has a nut allergy — flag any ingredients to watch.`,
         ws,
-        2000
+        4096
       );
       addMsg(recipeReply, 'ai');
 
@@ -426,7 +504,7 @@ export default function AgentTab({ onQuickSend, pendingMsg, onPendingMsgConsumed
                     ? ` We've already chosen from favourites — ${picked.map(d => `${d}: ${dayMeals[d].name}`).join(', ')}. Do NOT output those days.`
                     : '';
 
-                  sendMsg(`Plan dinners for ${toGenerate.join(', ')}.${pickedNote} For each day give 3 options: Day: Option 1 (time) / Option 2 (time) / Option 3 (time). Every meal must include a protein. Meat for the children, fish options for Parul. Include variety.`);
+                  sendMsg(`Plan dinners for ${toGenerate.join(', ')}.${pickedNote} For each day give 2 options: Day: Option 1 (time) / Option 2 (time). Choose meals where the protein sits alongside so Parul can easily have the dish vegetarian. Include variety.`);
                 }}
                 onCancel={() => setPlanningOpen(false)}
               />
