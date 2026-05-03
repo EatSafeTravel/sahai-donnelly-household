@@ -234,10 +234,56 @@ label { font-size: 12px; font-weight: 500; color: var(--mid); display: block; ma
 .tag-inline-input { border: none; border-bottom: 1px dashed var(--rule); border-radius: 0; padding: 2px 4px; font-size: 11px; width: 110px; background: transparent; outline: none; color: var(--ink); }
 .tag-inline-input:focus { border-bottom-color: var(--green-mid); }
 
+/* ── MOBILE ── */
+
+/* Remove tap delay on all interactive elements */
+button, a, input, select, textarea { touch-action: manipulation; }
+
 @media (max-width: 600px) {
-  .meal-grid { grid-template-columns: repeat(4, 1fr); }
+  /* Nav — scrolls horizontally, no wrapping */
+  .nav { padding: 0 10px; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-brand { font-size: 15px; min-width: fit-content; }
+  .nav-tab { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
+
+  /* Panels — tighter padding */
+  .panel { padding: 12px; }
+  .card-body { padding: 12px 14px; }
+
+  /* Stats — 2×2 grid */
+  .stat-row { flex-wrap: wrap; }
+  .stat { min-width: calc(50% - 5px); flex: none; }
+
+  /* Meal grid — 2 columns so cards are readable */
+  .meal-grid { grid-template-columns: repeat(2, 1fr); }
+  .meal-day { min-height: 80px; }
+
+  /* Shopping */
   .shop-grid { grid-template-columns: 1fr; }
+
+  /* Points */
+  .pts-grid { grid-template-columns: 1fr 1fr; }
+  .pts-score { font-size: 34px; }
   .rewards-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Setup */
   .setup-grid { grid-template-columns: 1fr; }
   .profiles-grid { grid-template-columns: 1fr; }
+
+  /* Agent chat */
+  .agent-chat { max-height: 320px; }
+  .setup-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .setup-banner-btn { width: 100%; text-align: center; }
+
+  /* Dinner plan form */
+  .dinner-plan-footer { flex-wrap: wrap; }
+  .dinner-plan-footer .btn { flex: 1; }
+
+  /* Bigger touch targets for small buttons */
+  .pts-btn { width: 40px; height: 40px; }
+  .btn-sm { padding: 8px 13px; }
+  .meal-skip-btn { padding-top: 6px; font-size: 10px; }
+
+  /* Login */
+  .login-card { padding: 28px 20px; margin: 16px; }
 }
