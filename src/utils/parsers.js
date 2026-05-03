@@ -51,18 +51,40 @@ export function parseMealsFromReply(text, state) {
   return changed ? meals : null;
 }
 
+// Words that indicate a line is AI commentary, not a grocery item
+const COMMENTARY_SIGNALS = [
+  'this week', 'no fish', 'no nuts', 'no meat', 'no seafood', 'no finned',
+  'great for', 'good for', 'option', 'inspired', 'free —', 'free-', '*(', ')*',
+  'ronan', 'parul', 'mira', 'kian', 'every night', 'every single',
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+];
+
+function isGroceryItem(name) {
+  const lower = name.toLowerCase();
+  // Reject if it contains commentary signals
+  if (COMMENTARY_SIGNALS.some(s => lower.includes(s))) return false;
+  // Reject if it contains asterisks (AI annotation markers)
+  if (name.includes('*')) return false;
+  // Reject if it looks like a sentence (contains common sentence patterns)
+  if (/\b(are|is|was|used|assigned|inspired|options?|week|night)\b/.test(lower)) return false;
+  // Reject items that are suspiciously long (real grocery items are short)
+  if (name.length > 45) return false;
+  return true;
+}
+
 export function parseShopFromReply(text, state) {
   const catMap = {
-    produce: 'Produce', fresh: 'Produce',
-    meat: 'Meat & fish', fish: 'Meat & fish',
-    pantry: 'Pantry', dry: 'Pantry',
+    produce: 'Produce', fresh: 'Produce', vegetables: 'Produce', fruit: 'Produce',
+    meat: 'Meat & fish', fish: 'Meat & fish', seafood: 'Meat & fish',
+    pantry: 'Pantry', dry: 'Pantry', staples: 'Pantry', cupboard: 'Pantry',
     dairy: 'Dairy', eggs: 'Dairy',
     frozen: 'Frozen',
-    other: 'Other',
+    other: 'Other', bakery: 'Other', herbs: 'Other',
   };
 
+  // Always start with empty categories so we replace rather than accumulate
   const shop = {};
-  Object.keys(state.shop).forEach(cat => { shop[cat] = [...state.shop[cat]]; });
+  Object.keys(state.shop).forEach(cat => { shop[cat] = []; });
 
   const lines = text.split('\n');
   let currentCat = 'Other';
@@ -76,10 +98,11 @@ export function parseShopFromReply(text, state) {
 
     const itemMatch = line.match(/^[-•*]\s+(.+?)(?:\s*[-–]\s*(.+?))?(?:\s*\((.+?)\))?$/);
     if (itemMatch) {
-      const name = (itemMatch[1] || '').replace(/\*\*/g, '').trim();
-      const qty = (itemMatch[2] || itemMatch[3] || '').trim();
+      const name = (itemMatch[1] || '').replace(/\*\*/g, '').replace(/\*/g, '').trim();
+      const qty = (itemMatch[2] || itemMatch[3] || '').replace(/\*/g, '').trim();
       if (
-        name && name.length < 60 &&
+        name &&
+        isGroceryItem(name) &&
         !shop[currentCat]?.find(i => i.name.toLowerCase() === name.toLowerCase())
       ) {
         if (!shop[currentCat]) shop[currentCat] = [];

@@ -23,6 +23,13 @@ export default function ShoppingTab() {
     save({ shop });
   }
 
+  function clearAll() {
+    if (!confirm('Clear the entire shopping list?')) return;
+    const shop = {};
+    CATEGORIES.forEach(c => { shop[c] = []; });
+    save({ shop });
+  }
+
   function addItem() {
     const n = addName.trim();
     if (!n) return;
@@ -54,7 +61,8 @@ export default function ShoppingTab() {
       <div className="card mb12">
         <div className="card-head">
           <span className="card-title">Shopping list</span>
-          <button className="btn btn-sm ml-auto btn-danger" onClick={clearDone}>Remove checked</button>
+          <button className="btn btn-sm ml-auto" onClick={clearAll}>Clear all</button>
+          <button className="btn btn-sm btn-danger" onClick={clearDone}>Remove checked</button>
         </div>
         <div className="card-body" style={{ padding: 0 }}>
           <div className="shop-grid" style={{ padding: '12px' }}>
